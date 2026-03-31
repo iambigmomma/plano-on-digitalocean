@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Storybook Generator</title>
+<script src="https://unpkg.com/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Caveat:wght@500;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: #0a0e1a;
+    min-height: 100vh;
+    color: #e2e8f0;
+    line-height: 1.6;
+  }
+
+  .container { max-width: 720px; margin: 0 auto; padding: 24px 20px; }
+
+  /* Header */
+  header {
+    text-align: center;
+    padding: 48px 0 40px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    margin-bottom: 32px;
+  }
+
+  header h1 {
+    font-family: 'Caveat', cursive;
+    font-size: 3.2rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #ffd700, #ff9500);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 8px;
+  }
+
+  header p {
+    color: #64748b;
+    font-size: 0.9rem;
+    font-weight: 400;
+  }
+
+  header .badges {
+    margin-top: 16px;
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 12px;
+    border-radius: 100px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .badge-plano { background: rgba(255,215,0,0.1); color: #ffd700; }
+  .badge-do { background: rgba(0,105,255,0.1); color: #4d94ff; }
+  .badge-ai { background: rgba(56,239,125,0.1); color: #38ef7d; }
+
+  /* Input Section */
+  .input-section {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 16px;
+    padding: 28px;
+    margin-bottom: 32px;
+  }
+
+  .input-section label {
+    display: block;
+    margin-bottom: 12px;
+    font-weight: 600;
+    font-size: 0.95rem;
+  }
+
+  .input-row {
+    display: flex;
+    gap: 10px;
+  }
+
+  .input-row input {
+    flex: 1;
+    padding: 14px 18px;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    background: rgba(255,255,255,0.04);
+    color: #e2e8f0;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.95rem;
+    transition: border-color 0.2s;
+  }
+
+  .input-row input::placeholder { color: #475569; }
+  .input-row input:focus { outline: none; border-color: #ffd700; background: rgba(255,215,0,0.03); }
+
+  .btn-primary {
+    padding: 14px 32px;
+    border: none;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #ffd700, #f0a500);
+    color: #0a0e1a;
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(255,215,0,0.25); }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+
+  .suggestions {
+    margin-top: 16px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .suggestion {
+    padding: 6px 14px;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 100px;
+    font-size: 0.78rem;
+    cursor: pointer;
+    color: #94a3b8;
+    transition: all 0.15s;
+  }
+
+  .suggestion:hover { color: #ffd700; border-color: rgba(255,215,0,0.3); background: rgba(255,215,0,0.05); }
+
+  /* Options */
+  .options {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(255,255,255,0.04);
+  }
+
+  .options label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.82rem;
+    color: #64748b;
+    cursor: pointer;
+    margin-bottom: 0;
+  }
+
+  .options input[type="checkbox"] { accent-color: #ffd700; }
+
+  /* Pipeline */
+  .pipeline { margin-bottom: 32px; }
+
+  .pipeline-title {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #475569;
+    margin-bottom: 16px;
+  }
+
+  .step {
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.04);
+    border-radius: 12px;
+    padding: 18px 22px;
+    margin-bottom: 10px;
+    border-left: 3px solid rgba(255,255,255,0.06);
+    transition: all 0.3s ease;
+  }
+
+  .step.active {
+    border-left-color: #ffd700;
+    background: rgba(255,215,0,0.02);
+    border-color: rgba(255,215,0,0.1);
+  }
+
+  .step.done {
+    border-left-color: #38ef7d;
+    background: rgba(56,239,125,0.02);
+  }
+
+  .step.skipped {
+    border-left-color: #64748b;
+    opacity: 0.6;
+  }
+
+  .step.error { border-left-color: #ef4444; }
+
+  .step-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+  }
+
+  .step-title {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: #e2e8f0;
+  }
+
+  .step-model {
+    font-size: 0.7rem;
+    font-weight: 500;
+    padding: 3px 10px;
+    border-radius: 100px;
+    background: rgba(255,255,255,0.06);
+    color: #94a3b8;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+  }
+
+  .step-content {
+    font-size: 0.82rem;
+    line-height: 1.7;
+    color: #94a3b8;
+    max-height: 180px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    display: none;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(255,255,255,0.04);
+  }
+
+  .step.done .step-content,
+  .step.active .step-content,
+  .step.skipped .step-content { display: block; }
+
+  .step-spinner {
+    display: none;
+    font-size: 0.82rem;
+    color: #ffd700;
+    margin-top: 6px;
+  }
+
+  .step-spinner::before { content: ''; display: inline-block; width: 12px; height: 12px; border: 2px solid rgba(255,215,0,0.3); border-top-color: #ffd700; border-radius: 50%; animation: spin 0.8s linear infinite; margin-right: 8px; vertical-align: middle; }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .step.active .step-spinner { display: block; }
+
+  /* Storybook */
+  .storybook {
+    display: none;
+    margin-top: 40px;
+    padding-top: 40px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .storybook.visible { display: block; }
+
+  .storybook h2 {
+    font-family: 'Caveat', cursive;
+    font-size: 2.4rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #ffd700, #ff9500);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-align: center;
+    margin-bottom: 36px;
+  }
+
+  .page {
+    text-align: center;
+    margin-bottom: 48px;
+    padding-bottom: 48px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+
+  .page:last-child { border-bottom: none; }
+
+  .page img {
+    width: 100%;
+    max-width: 520px;
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    margin-bottom: 20px;
+  }
+
+  .page .placeholder-img {
+    width: 100%;
+    max-width: 520px;
+    height: 320px;
+    margin: 0 auto 20px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3.5rem;
+    opacity: 0.8;
+  }
+
+  .page-num {
+    font-family: 'Caveat', cursive;
+    font-size: 1.4rem;
+    color: #ffd700;
+    opacity: 0.6;
+    margin-bottom: 14px;
+  }
+
+  .page-text {
+    font-size: 1.1rem;
+    line-height: 2;
+    max-width: 540px;
+    margin: 0 auto;
+    color: #cbd5e1;
+  }
+
+  .the-end {
+    text-align: center;
+    padding: 40px 0;
+    color: #475569;
+    font-size: 0.85rem;
+  }
+
+  .the-end .stars { font-size: 1.2rem; margin-bottom: 8px; letter-spacing: 8px; }
+
+  .download-section {
+    text-align: center;
+    padding: 24px 0 8px;
+  }
+
+  .btn-download {
+    padding: 14px 36px;
+    border: 1px solid rgba(77,148,255,0.3);
+    border-radius: 12px;
+    background: rgba(77,148,255,0.08);
+    color: #4d94ff;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .btn-download:hover { background: rgba(77,148,255,0.15); border-color: #4d94ff; }
+  .btn-download:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* Footer */
+  .footer-info {
+    text-align: center;
+    padding: 32px 0;
+    border-top: 1px solid rgba(255,255,255,0.04);
+    margin-top: 24px;
+  }
+
+  .footer-info p {
+    color: #334155;
+    font-size: 0.72rem;
+    margin-bottom: 4px;
+  }
+
+  .footer-info code {
+    color: #4d94ff;
+    font-size: 0.7rem;
+    background: rgba(77,148,255,0.08);
+    padding: 1px 6px;
+    border-radius: 4px;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <h1>AI Storybook Generator</h1>
+    <p>Create illustrated children's stories with intelligent multi-agent routing</p>
+    <div class="badges">
+      <span class="badge badge-plano">Plano Gateway</span>
+      <span class="badge badge-do">DigitalOcean Inference</span>
+      <span class="badge badge-ai">Multi-Model AI</span>
+    </div>
+  </header>
+
+  <div class="input-section">
+    <label>What's the story about?</label>
+    <div class="input-row">
+      <input type="text" id="theme" placeholder="a kitten who is scared of the dark but loves stars" />
+      <button class="btn-primary" id="generateBtn" onclick="generate()">Generate</button>
+    </div>
+    <div class="suggestions">
+      <span class="suggestion" onclick="setTheme(this)">a baby dragon who sneezes flowers</span>
+      <span class="suggestion" onclick="setTheme(this)">a penguin who dreams of flying to the moon</span>
+      <span class="suggestion" onclick="setTheme(this)">a shy firefly who lights up the forest</span>
+      <span class="suggestion" onclick="setTheme(this)">a tiny robot who learns what friendship means</span>
+    </div>
+    <div class="options">
+      <label><input type="checkbox" id="skipImages"> Skip illustrations (faster)</label>
+    </div>
+  </div>
+
+  <div class="pipeline" id="pipeline">
+    <div class="pipeline-title">Pipeline</div>
+    <div class="step" id="step-write">
+      <div class="step-header">
+        <span class="step-title">1. Story Writer</span>
+        <span class="step-model" id="model-write"></span>
+      </div>
+      <div class="step-spinner">Drafting story...</div>
+      <div class="step-content" id="content-write"></div>
+    </div>
+    <div class="step" id="step-edit">
+      <div class="step-header">
+        <span class="step-title">2. Story Editor</span>
+        <span class="step-model" id="model-edit"></span>
+      </div>
+      <div class="step-spinner">Polishing prose...</div>
+      <div class="step-content" id="content-edit"></div>
+    </div>
+    <div class="step" id="step-craft">
+      <div class="step-header">
+        <span class="step-title">3. Prompt Crafter</span>
+        <span class="step-model" id="model-craft"></span>
+      </div>
+      <div class="step-spinner">Creating image prompts...</div>
+      <div class="step-content" id="content-craft"></div>
+    </div>
+    <div class="step" id="step-illustrate">
+      <div class="step-header">
+        <span class="step-title">4. Illustrator</span>
+        <span class="step-model" id="model-illustrate"></span>
+      </div>
+      <div class="step-spinner">Generating illustrations...</div>
+      <div class="step-content" id="content-illustrate"></div>
+    </div>
+  </div>
+
+  <div class="storybook" id="storybook">
+    <h2>Your Storybook</h2>
+    <div id="pages"></div>
+    <div class="the-end">
+      <div class="stars">&#10022; &#10022; &#10022;</div>
+      <p>The End. Sweet dreams.</p>
+    </div>
+    <div class="download-section">
+      <button class="btn-download" onclick="downloadPDF()">Download as PDF</button>
+    </div>
+  </div>
+
+  <div class="footer-info">
+    <p>Plano intelligent agent routing &rarr; DigitalOcean Serverless Inference</p>
+    <p><code>Opus 4.6</code> writing &middot; <code>Llama 3.3</code> prompts &middot; <code>fast-sdxl</code> images</p>
+  </div>
+</div>
+
+<script>
+// Global state for PDF export
+let storybookData = { theme: '', pages: [], images: [] };
+
+// Load an image URL into a base64 data URL via canvas
+function loadImageAsDataURL(url) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      const c = document.createElement('canvas');
+      c.width = img.width; c.height = img.height;
+      c.getContext('2d').drawImage(img, 0, 0);
+      resolve({ data: c.toDataURL('image/jpeg', 0.85), w: img.width, h: img.height });
+    };
+    img.onerror = () => resolve(null);
+    img.src = url;
+  });
+}
+
+// Load CJK font (Noto Sans SC) for PDF
+let cjkFontLoaded = false;
+async function ensureCJKFont(pdf) {
+  if (cjkFontLoaded) return;
+  try {
+    const resp = await fetch('https://cdn.jsdelivr.net/gh/nicholasgasior/gfonts-base64/fonts/noto-sans-sc/NotoSansSC-Regular-base64.txt');
+    if (resp.ok) {
+      const b64 = await resp.text();
+      pdf.addFileToVFS('NotoSansSC.ttf', b64);
+      pdf.addFont('NotoSansSC.ttf', 'NotoSansSC', 'normal');
+      cjkFontLoaded = true;
+    }
+  } catch {}
+}
+
+async function downloadPDF() {
+  const btn = document.querySelector('.btn-download');
+  btn.disabled = true;
+  btn.textContent = 'Creating PDF...';
+
+  try {
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ unit: 'mm', format: 'a4' });
+    const W = 210, H = 297, M = 20;
+
+    // Try to load CJK font
+    await ensureCJKFont(pdf);
+    const fontName = cjkFontLoaded ? 'NotoSansSC' : 'helvetica';
+
+    // Helper: dark page background
+    const darkBg = () => { pdf.setFillColor(10, 14, 26); pdf.rect(0, 0, W, H, 'F'); };
+
+    // --- Cover page ---
+    darkBg();
+    pdf.setFont(fontName, 'normal');
+    pdf.setTextColor(255, 215, 0);
+    pdf.setFontSize(36);
+    pdf.text('Bedtime Story', W / 2, 90, { align: 'center' });
+
+    pdf.setTextColor(200, 200, 210);
+    pdf.setFontSize(16);
+    const themeLines = pdf.splitTextToSize(storybookData.theme, W - M * 2);
+    pdf.text(themeLines, W / 2, 110, { align: 'center' });
+
+    pdf.setTextColor(100, 100, 120);
+    pdf.setFontSize(9);
+    pdf.text('Generated by AI Storybook Generator', W / 2, 250, { align: 'center' });
+    pdf.text('Plano Intelligent Routing + DigitalOcean Serverless Inference', W / 2, 257, { align: 'center' });
+
+    // --- Story pages ---
+    for (let i = 0; i < storybookData.pages.length; i++) {
+      pdf.addPage();
+      darkBg();
+      let y = M;
+
+      // Page number
+      pdf.setFont(fontName, 'normal');
+      pdf.setTextColor(255, 215, 0);
+      pdf.setFontSize(16);
+      pdf.text(`- ${i + 1} -`, W / 2, y + 8, { align: 'center' });
+      y += 18;
+
+      // Image
+      if (storybookData.images[i]) {
+        const imgInfo = await loadImageAsDataURL(storybookData.images[i]);
+        if (imgInfo) {
+          const imgW = W - M * 2;
+          const imgH = Math.min(imgW * (imgInfo.h / imgInfo.w), 130);
+          const imgX = M;
+          // Rounded corner effect: just add the image
+          pdf.addImage(imgInfo.data, 'JPEG', imgX, y, imgW, imgH);
+          y += imgH + 12;
+        }
+      } else {
+        // Placeholder
+        pdf.setFillColor(45, 27, 105);
+        pdf.roundedRect(M, y, W - M * 2, 80, 4, 4, 'F');
+        pdf.setTextColor(200, 200, 200);
+        pdf.setFontSize(28);
+        pdf.text(['&#127968;', '&#10024;', '&#127769;', '&#128164;'][i] || '*', W / 2, y + 45, { align: 'center' });
+        y += 92;
+      }
+
+      // Story text
+      pdf.setFont(fontName, 'normal');
+      pdf.setTextColor(210, 215, 225);
+      pdf.setFontSize(13);
+      const textLines = pdf.splitTextToSize(storybookData.pages[i], W - M * 2);
+      pdf.text(textLines, W / 2, y, { align: 'center', lineHeightFactor: 1.8 });
+    }
+
+    // --- End page ---
+    pdf.addPage();
+    darkBg();
+    pdf.setTextColor(255, 215, 0);
+    pdf.setFontSize(24);
+    pdf.text('The End', W / 2, 120, { align: 'center' });
+    pdf.setTextColor(150, 150, 170);
+    pdf.setFontSize(13);
+    pdf.text('Sweet dreams.', W / 2, 135, { align: 'center' });
+
+    pdf.setTextColor(80, 80, 100);
+    pdf.setFontSize(8);
+    pdf.text('Powered by Plano + DigitalOcean', W / 2, 250, { align: 'center' });
+
+    // Save
+    const safeName = storybookData.theme.replace(/[^a-zA-Z0-9\u4e00-\u9fff ]/g, '').trim().replace(/\s+/g, '-').slice(0, 40) || 'storybook';
+    pdf.save(`storybook-${safeName}.pdf`);
+  } catch (err) {
+    console.error('PDF error:', err);
+    alert('PDF generation failed: ' + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Download as PDF';
+  }
+}
+
+function setTheme(el) {
+  document.getElementById('theme').value = el.textContent;
+}
+
+async function callAPI(step, theme, context) {
+  const resp = await fetch('/api/generate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ theme, step, context }),
+  });
+  if (!resp.ok) throw new Error(`API error: ${resp.status}`);
+  return resp.json();
+}
+
+function setStepState(step, state, model, content) {
+  const el = document.getElementById(`step-${step}`);
+  el.className = `step ${state}`;
+  if (model) document.getElementById(`model-${step}`).textContent = model;
+  if (content !== undefined) document.getElementById(`content-${step}`).textContent = content;
+}
+
+function parsePages(story) {
+  const pages = [];
+  let current = [];
+  for (const line of story.split('\n')) {
+    const trimmed = line.trim();
+    if (/^(#.*)?PAGE\s*\d+/i.test(trimmed)) {
+      if (current.length) pages.push(current.join(' ').trim());
+      current = [];
+      const after = trimmed.replace(/^#.*?PAGE\s*\d+\s*:?\s*/i, '').replace(/^PAGE\s*\d+\s*:?\s*/i, '');
+      if (after) current.push(after);
+    } else if (trimmed && !trimmed.startsWith('#')) {
+      current.push(trimmed);
+    }
+  }
+  if (current.length) pages.push(current.join(' ').trim());
+  while (pages.length < 4) pages.push('...');
+  return pages.slice(0, 4);
+}
+
+function parseImagePrompts(raw) {
+  let text = raw.trim();
+  if (text.includes('```')) {
+    text = text.split('```')[1];
+    if (text.startsWith('json')) text = text.slice(4);
+    text = text.trim();
+  }
+  const start = text.indexOf('[');
+  const end = text.lastIndexOf(']');
+  if (start !== -1 && end !== -1) text = text.slice(start, end + 1);
+  try { return JSON.parse(text); } catch { return []; }
+}
+
+function renderStorybook(pages, images, theme) {
+  storybookData = { theme: theme || '', pages, images };
+  const gradients = [
+    'linear-gradient(135deg, #2d1b69, #5b2c8e, #8e44ad)',
+    'linear-gradient(135deg, #0c3547, #11998e, #38ef7d)',
+    'linear-gradient(135deg, #1e3a5f, #4a69bd, #6a89cc)',
+    'linear-gradient(135deg, #2c1810, #e2703a, #eec643)',
+  ];
+  const emojis = ['&#127968;', '&#10024;', '&#127769;', '&#128164;'];
+  const container = document.getElementById('pages');
+  container.innerHTML = '';
+  pages.forEach((text, i) => {
+    const img = images[i]
+      ? `<img src="${images[i]}" alt="Page ${i+1}">`
+      : `<div class="placeholder-img" style="background:${gradients[i]}">${emojis[i]}</div>`;
+    container.innerHTML += `
+      <div class="page">
+        <div class="page-num">&mdash; ${i+1} &mdash;</div>
+        ${img}
+        <div class="page-text">${text}</div>
+      </div>`;
+  });
+  document.getElementById('storybook').classList.add('visible');
+}
+
+async function generate() {
+  const theme = document.getElementById('theme').value.trim();
+  if (!theme) return;
+  const skipImages = document.getElementById('skipImages').checked;
+
+  const btn = document.getElementById('generateBtn');
+  btn.disabled = true;
+  btn.textContent = 'Generating...';
+  document.getElementById('storybook').classList.remove('visible');
+
+  ['write','edit','craft','illustrate'].forEach(s => setStepState(s, '', '', ''));
+
+  try {
+    // Step 1: Write
+    setStepState('write', 'active');
+    const r1 = await callAPI('write', theme, '');
+    setStepState('write', 'done', r1.model, r1.content);
+
+    // Step 2: Edit
+    setStepState('edit', 'active');
+    const r2 = await callAPI('edit', theme, r1.content);
+    setStepState('edit', 'done', r2.model, r2.content);
+
+    // Step 3: Craft image prompts
+    setStepState('craft', 'active');
+    const r3 = await callAPI('craft', theme, r2.content);
+    setStepState('craft', 'done', r3.model, r3.content);
+
+    // Step 4: Generate images (or skip)
+    const prompts = parseImagePrompts(r3.content);
+    const images = [];
+
+    if (skipImages) {
+      setStepState('illustrate', 'skipped', 'skipped', 'Illustrations skipped');
+    } else {
+      setStepState('illustrate', 'active');
+      for (let i = 0; i < Math.min(prompts.length, 4); i++) {
+        document.getElementById('content-illustrate').textContent = `Generating image ${i+1}/4...`;
+        try {
+          const r4 = await callAPI('illustrate', theme, prompts[i]);
+          images.push(r4.content);
+          document.getElementById('content-illustrate').textContent = `${i+1}/4 done`;
+        } catch {
+          images.push('');
+        }
+      }
+      const count = images.filter(Boolean).length;
+      setStepState('illustrate', 'done', 'fal-ai/fast-sdxl', `${count}/4 images generated`);
+    }
+
+    // Render storybook
+    const pages = parsePages(r2.content);
+    renderStorybook(pages, images, theme);
+
+  } catch (err) {
+    console.error(err);
+    alert('Something went wrong. Check console for details.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Generate';
+  }
+}
+</script>
+</body>
+</html>
