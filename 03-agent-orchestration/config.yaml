@@ -1,37 +1,78 @@
 version: v0.3.0
 
 overrides:
-  llm_routing_model: Arch-Router
+  agent_orchestration_model: plano/katanemo/Plano-Orchestrator-4B
 
-listeners:
-  - type: model
-    name: storybook_gateway
-    port: 12000
+agents:
+  - id: story_writer
+    url: http://localhost:10510
+  - id: story_editor
+    url: http://localhost:10520
+  - id: prompt_crafter
+    url: http://localhost:10530
 
 model_providers:
-  # Default fallback — fast, cheap ($0.65/1M tokens)
+  # Plano-Orchestrator-4B — self-hosted on vLLM for intelligent agent routing
+  - model: plano/katanemo/Plano-Orchestrator-4B
+    base_url: http://localhost:10010
+
+  # Default LLM for agent responses — Llama 3.3 via DO
   - model: digitalocean/llama3.3-70b-instruct
     base_url: https://inference.do-ai.run
     provider_interface: openai
     access_key: $DO_MODEL_ACCESS_KEY
     default: true
 
-  # Premium creative + editing — Anthropic via DO pass-through ($5/$25 per 1M)
+  # Premium — Anthropic Claude Opus 4.6 via DO pass-through
   - model: digitalocean/anthropic-claude-opus-4.6
     base_url: https://inference.do-ai.run
     provider_interface: openai
     access_key: $DO_MODEL_ACCESS_KEY
-    routing_preferences:
-      - name: creative_writing
-        description: creative storytelling, writing fiction, generating narratives, poetry, and imaginative content
-      - name: editing_and_polishing
-        description: editing, refining, and polishing written prose for better rhythm, clarity, and emotional impact
 
-  # Reasoning — DeepSeek R1 ($0.99/1M tokens)
-  - model: digitalocean/deepseek-r1-distill-llama-70b
-    base_url: https://inference.do-ai.run
-    provider_interface: openai
-    access_key: $DO_MODEL_ACCESS_KEY
-    routing_preferences:
-      - name: reasoning_and_analysis
-        description: mathematical problem solving, logical reasoning, step-by-step analysis, and complex calculations
+listeners:
+  - type: agent
+    name: storybook_orchestrator
+    port: 8001
+    router: plano_orchestrator_v1
+    agents:
+      - id: story_writer
+        description: |
+          StoryWriter is a creative writing agent that drafts original children's
+          bedtime stories. It creates warm, imaginative 4-page stories for ages 3-6
+          with vivid language and gentle morals.
+
+          Capabilities:
+            * Write original bedtime stories from a theme or prompt
+            * Create 4-page structured stories with beginning, middle, and end
+            * Use age-appropriate vocabulary and sentence structure
+            * Include character names, settings, and emotional arcs
+            * Handle requests like "Write a story about...", "Create a bedtime tale..."
+
+      - id: story_editor
+        description: |
+          StoryEditor is a literary editing agent that polishes and refines story
+          drafts. It improves prose rhythm, vivid descriptions, and pacing while
+          preserving the original story and moral.
+
+          Capabilities:
+            * Polish and refine existing story drafts
+            * Improve prose rhythm and sentence flow
+            * Make descriptions more vivid and engaging
+            * Ensure pacing feels right for bedtime reading
+            * Handle requests like "Edit this story...", "Polish this draft...", "Improve this text..."
+
+      - id: prompt_crafter
+        description: |
+          PromptCrafter converts story text into structured image generation prompts.
+          It outputs a JSON array of detailed visual descriptions suitable for AI
+          image generators, in soft watercolor children's book illustration style.
+
+          Capabilities:
+            * Convert story pages into image generation prompts
+            * Output structured JSON arrays of prompt strings
+            * Maintain visual consistency of characters across pages
+            * Describe scenes with mood, lighting, and composition details
+            * Handle requests like "Create image prompts for...", "Convert this story to image descriptions..."
+
+tracing:
+  random_sampling: 100
