@@ -1,9 +1,14 @@
 """
-Test multi-model routing through Plano → DigitalOcean Serverless Inference.
+Demo: Multi-Model Routing + Observability through Plano → DigitalOcean
+
+Sends different types of prompts to different DO models through Plano,
+then shows you can trace every request with `planoai trace`.
 
 Prerequisites:
   export DO_MODEL_ACCESS_KEY="dop_v1_..."
-  planoai up config.yaml
+  planoai up config.yaml --with-tracing     # <-- enables trace collection
+  # In another terminal:
+  planoai trace                              # <-- watch traces live
 
 Usage:
   uv run test.py
@@ -14,23 +19,55 @@ from openai import OpenAI
 PLANO_URL = "http://localhost:12000/v1"
 client = OpenAI(base_url=PLANO_URL, api_key="unused")
 
-models = [
-    ("digitalocean/llama3.3-70b-instruct", "What is DigitalOcean in one sentence?"),
-    ("digitalocean/deepseek-r1-distill-llama-70b", "What is 15 * 37? Think step by step."),
-    ("digitalocean/alibaba-qwen3-32b", "Translate 'Hello World' to Japanese, Korean, and Chinese."),
+test_cases = [
+    {
+        "model": "digitalocean/llama3.3-70b-instruct",
+        "prompt": "Write a 2-sentence bedtime story about a dragon who bakes cookies.",
+        "task": "Creative Writing",
+    },
+    {
+        "model": "digitalocean/deepseek-r1-distill-llama-70b",
+        "prompt": "What is 127 * 49? Show your step-by-step reasoning.",
+        "task": "Math Reasoning",
+    },
+    {
+        "model": "digitalocean/llama3.3-70b-instruct",
+        "prompt": "Write a haiku about cloud computing.",
+        "task": "Creative Writing",
+    },
+    {
+        "model": "digitalocean/deepseek-r1-distill-llama-70b",
+        "prompt": "A train leaves Station A at 60 km/h. Another leaves Station B (300 km away) at 90 km/h heading toward A. When do they meet?",
+        "task": "Logic Problem",
+    },
 ]
 
-for model, prompt in models:
-    print(f"\n{'='*60}")
-    print(f"Model: {model}")
-    print(f"Prompt: {prompt}")
-    print("-" * 60)
+print("=" * 65)
+print("  Plano Multi-Model Routing + Observability Demo")
+print("  All models on DigitalOcean Serverless Inference")
+print("=" * 65)
+print()
+print("  Tip: Run `planoai trace` in another terminal to see live traces!")
+print()
+
+for i, case in enumerate(test_cases, 1):
+    model_short = case["model"].split("/")[-1]
+    print(f"{'─'*65}")
+    print(f"  [{i}] {case['task']}  →  {model_short}")
+    print(f"  Prompt: {case['prompt'][:55]}...")
+    print(f"{'─'*65}")
+
     resp = client.chat.completions.create(
-        model=model,
-        messages=[{"role": "user", "content": prompt}],
+        model=case["model"],
+        messages=[{"role": "user", "content": case["prompt"]}],
         max_tokens=200,
     )
-    print(resp.choices[0].message.content)
 
-print(f"\n{'='*60}")
-print("All 3 models routed through Plano successfully!")
+    content = (resp.choices[0].message.content or "").strip().replace("\n", " ")
+    print(f"  Response: {content[:150]}...")
+    print()
+
+print("=" * 65)
+print("  Done! Check `planoai trace` output for request traces.")
+print("  Each trace shows: model selected, latency, token usage.")
+print("=" * 65)

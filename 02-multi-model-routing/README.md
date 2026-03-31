@@ -1,42 +1,54 @@
-# 02 - Multi-Model Routing
+# 02 - Multi-Model Routing + Observability
 
-Route requests to multiple DigitalOcean Serverless Inference models through a single Plano endpoint. **No OpenAI API key needed.**
+Route different tasks to different DO models through a single Plano gateway, with built-in request tracing.
+
+## Architecture
+
+```
+Client (one endpoint)
+  │
+  ├─ "Write a story"  → Plano → llama3.3-70b (creative, $0.65/1M)
+  └─ "Solve 127*49"   → Plano → deepseek-r1-70b (reasoning, $0.99/1M)
+```
 
 ## Models
 
-| Model | Strength | Cost |
+| Model | Best for | Cost |
 |-------|----------|------|
-| `llama3.3-70b-instruct` | General tasks (default) | $0.65/1M tokens |
-| `deepseek-r1-distill-llama-70b` | Reasoning / chain-of-thought | $0.99/1M tokens |
-| `alibaba-qwen3-32b` | Multilingual / structured output | — |
+| `llama3.3-70b-instruct` | Creative writing, general tasks | $0.65/1M tokens |
+| `deepseek-r1-distill-llama-70b` | Math, reasoning, editing | $0.99/1M tokens |
 
 ## Setup
 
 ```bash
-# 1. Get your Model Access Key from DO Control Panel → Gen AI → Model Access Keys
+# 1. Set your DO Model Access Key
 export DO_MODEL_ACCESS_KEY="dop_v1_..."
 
-# 2. Start Plano
-planoai up config.yaml
+# 2. Start Plano WITH tracing enabled
+planoai up config.yaml --with-tracing
 
-# 3. Test all models
+# 3. (In a second terminal) Watch traces live
+planoai trace
+
+# 4. (In a third terminal) Run the demo
 uv run test.py
 ```
 
-## Manual test
+## What you'll see
 
-```bash
-curl http://localhost:12000/v1/chat/completions \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "digitalocean/llama3.3-70b-instruct",
-    "messages": [{"role": "user", "content": "Hello from DO!"}]
-  }'
-```
+### In the test output
+Different prompts routed to different models, all through `localhost:12000`.
+
+### In `planoai trace`
+Live request traces showing:
+- Which model handled each request
+- Request/response latency
+- Token usage per request
+- Full request lifecycle
 
 ## What this proves
 
-- Plano routes to DO Serverless Inference with zero code changes
-- Multiple models accessible through one gateway
-- Swap `base_url` to `https://inference.do-ai.run` — that's it
-- All DO-hosted open-source models, no third-party API keys
+- **Unified gateway** — one endpoint routes to multiple DO models
+- **Observability** — every request is traced, zero instrumentation code
+- **Zero vendor lock-in** — swap models by changing config, not code
+- **All DO-native** — no OpenAI or third-party API keys needed

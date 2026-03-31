@@ -6,21 +6,21 @@ listeners:
     port: 12000
 
 model_providers:
-  # Primary: Llama 3.3 70B — fast, cheap ($0.65/1M tokens), great for general tasks
+  # Creative / General → Llama 3.3 70B (fast, cheap)
   - model: digitalocean/llama3.3-70b-instruct
     base_url: https://inference.do-ai.run
     provider_interface: openai
-    access_key: ${DO_MODEL_ACCESS_KEY}
+    access_key: $DO_MODEL_ACCESS_KEY
     default: true
 
-  # Reasoning: DeepSeek R1 Distill 70B — strong at analysis & chain-of-thought
+  # Reasoning / Analysis → DeepSeek R1 Distill 70B
   - model: digitalocean/deepseek-r1-distill-llama-70b
     base_url: https://inference.do-ai.run
     provider_interface: openai
-    access_key: ${DO_MODEL_ACCESS_KEY}
+    access_key: $DO_MODEL_ACCESS_KEY
 
-  # Multilingual / Code: Qwen3 32B — good at multilingual + structured output
-  - model: digitalocean/alibaba-qwen3-32b
+  # Premium — Anthropic Claude Opus 4.6 via DO pass-through
+  - model: digitalocean/anthropic-claude-opus-4.6
     base_url: https://inference.do-ai.run
     provider_interface: openai
-    access_key: ${DO_MODEL_ACCESS_KEY}
+    access_key: $DO_MODEL_ACCESS_KEY

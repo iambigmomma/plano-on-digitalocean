@@ -1,26 +1,37 @@
 version: v0.3.0
 
+overrides:
+  llm_routing_model: Arch-Router
+
 listeners:
   - type: model
     name: storybook_gateway
     port: 12000
 
 model_providers:
-  # Story Writer — fast and creative
+  # Default fallback — fast, cheap ($0.65/1M tokens)
   - model: digitalocean/llama3.3-70b-instruct
     base_url: https://inference.do-ai.run
     provider_interface: openai
-    access_key: ${DO_MODEL_ACCESS_KEY}
+    access_key: $DO_MODEL_ACCESS_KEY
     default: true
 
-  # Story Editor — strong reasoning for structure and polish
+  # Premium creative + editing — Anthropic via DO pass-through ($5/$25 per 1M)
+  - model: digitalocean/anthropic-claude-opus-4.6
+    base_url: https://inference.do-ai.run
+    provider_interface: openai
+    access_key: $DO_MODEL_ACCESS_KEY
+    routing_preferences:
+      - name: creative_writing
+        description: creative storytelling, writing fiction, generating narratives, poetry, and imaginative content
+      - name: editing_and_polishing
+        description: editing, refining, and polishing written prose for better rhythm, clarity, and emotional impact
+
+  # Reasoning — DeepSeek R1 ($0.99/1M tokens)
   - model: digitalocean/deepseek-r1-distill-llama-70b
     base_url: https://inference.do-ai.run
     provider_interface: openai
-    access_key: ${DO_MODEL_ACCESS_KEY}
-
-  # Prompt Crafter — good at structured output and multilingual
-  - model: digitalocean/alibaba-qwen3-32b
-    base_url: https://inference.do-ai.run
-    provider_interface: openai
-    access_key: ${DO_MODEL_ACCESS_KEY}
+    access_key: $DO_MODEL_ACCESS_KEY
+    routing_preferences:
+      - name: reasoning_and_analysis
+        description: mathematical problem solving, logical reasoning, step-by-step analysis, and complex calculations

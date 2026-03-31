@@ -1,30 +1,30 @@
 # Plano on DigitalOcean
 
-Using [Plano](https://planoai.dev) as the AI gateway for DigitalOcean's Serverless Inference — routing, orchestration, and multi-model collaboration without third-party API keys.
+Using [Plano](https://planoai.dev) as the AI gateway for DigitalOcean's Serverless Inference — task-aware routing, multi-model orchestration, and observability. All models (including Anthropic Claude Opus 4.6) accessed through one DO endpoint, one API key.
 
 ## Structure
 
 | Directory | Description | Status |
 |-----------|-------------|--------|
 | `01-quickstart/` | Basic Plano proxy — get it running | Done |
-| `02-multi-model-routing/` | Route to 3 DO models through one gateway | Done |
-| `03-agent-orchestration/` | **AI Storybook Generator** — 4 models collaborate to create illustrated children's stories | Done |
+| `02-multi-model-routing/` | Route to 3 DO models + tracing observability | Done |
+| `03-agent-orchestration/` | **AI Storybook Generator** — task-aware routing across Opus 4.6, Llama, DeepSeek + image gen | Done |
 | `04-vllm-integration/` | Plano + vLLM on DO GPU Droplet | Planned |
 
 ## The Demo: AI Storybook Generator
 
-The headline demo in `03-agent-orchestration/` generates a children's bedtime storybook:
+The headline demo in `03-agent-orchestration/` generates an illustrated children's bedtime storybook with task-aware model routing:
 
 ```
 "a kitten who is scared of the dark"
-  → Story Writer   (llama3.3-70b)        writes the draft
-  → Story Editor   (deepseek-r1-70b)     polishes the prose
-  → Prompt Crafter (qwen3-32b)           creates image prompts
-  → Illustrator    (flux/schnell)        generates watercolor illustrations
-  → Assembler      (Python)              outputs an HTML storybook
+  → Story Writer   (Opus 4.6)       writes the draft         [creative]
+  → Story Editor   (Opus 4.6)       polishes the prose       [editing]
+  → Prompt Crafter (Llama 3.3)      creates image prompts    [structured]
+  → Illustrator    (fast-sdxl)      generates illustrations   [image_gen]
+  → Assembler      (Python)         outputs HTML storybook
 ```
 
-All models run on DigitalOcean Serverless Inference. Total cost per storybook: < $0.01.
+Premium model (Opus 4.6) for creative tasks, cheap model (Llama 3.3) for mechanical tasks. All through one Plano gateway, all on DigitalOcean.
 
 ## Prerequisites
 
@@ -38,13 +38,15 @@ All models run on DigitalOcean Serverless Inference. Total cost per storybook: <
 # 1. Set your DO credentials
 export DO_MODEL_ACCESS_KEY="dop_v1_..."
 
-# 2. Start Plano
+# 2. Start Plano with tracing
 cd 03-agent-orchestration
-planoai up config.yaml
+planoai up config.yaml --with-tracing
 
-# 3. Generate a storybook (in another terminal)
-cd 03-agent-orchestration
+# 3. Watch traces (optional, in another terminal)
+planoai trace
+
+# 4. Generate a storybook
 uv run storybook.py "a brave little robot who learns to dream"
 
-# 4. Open the generated HTML file in your browser
+# 5. Open the generated HTML file in your browser
 ```

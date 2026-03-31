@@ -1,27 +1,35 @@
 # 03 - Agent Orchestration: AI Storybook Generator
 
-Generate a children's bedtime storybook with illustrations — powered entirely by DigitalOcean.
+Generate a children's bedtime storybook with illustrations — powered entirely by DigitalOcean Serverless Inference, routed through Plano.
 
-Four AI models collaborate through Plano to write, edit, illustrate, and assemble a storybook:
+## Architecture
 
 ```
 User: "a kitten who is scared of the dark"
          |
-         v
-  Story Writer (llama3.3-70b)    → Draft 4-page story
+         v   (task-aware routing picks the best model per step)
+  Story Writer   (Opus 4.6)   → Draft 4-page story       [creative]
          |
-         v
-  Story Editor (deepseek-r1-70b) → Polish prose and pacing
+  Story Editor   (Opus 4.6)   → Polish prose and pacing   [editing]
          |
-         v
-  Prompt Crafter (qwen3-32b)     → Convert pages to image prompts
+  Prompt Crafter (Llama 3.3)  → Image prompts as JSON     [structured]
          |
-         v
-  Illustrator (flux/schnell)     → Generate 4 watercolor illustrations
+  Illustrator    (fast-sdxl)  → 4 watercolor illustrations [image_gen]
          |
-         v
-  Assembler (Python)             → HTML storybook you can open in a browser
+  Assembler      (Python)     → HTML storybook
 ```
+
+All models accessed through one Plano gateway at `localhost:12000`.
+Anthropic Claude Opus 4.6 is available via DO's pass-through — same endpoint, same API key.
+
+## Models
+
+| Model | Task | Why | Cost |
+|-------|------|-----|------|
+| `anthropic-claude-opus-4.6` | Writing, editing | Best creative quality | $5/$25 per 1M |
+| `llama3.3-70b-instruct` | Structured output | Fast, cheap, reliable JSON | $0.65/1M |
+| `deepseek-r1-distill-llama-70b` | Reasoning | Strong chain-of-thought | $0.99/1M |
+| `fal-ai/fast-sdxl` | Illustrations | Fast image generation | ~$0.001/image |
 
 ## Setup
 
@@ -29,45 +37,37 @@ User: "a kitten who is scared of the dark"
 # 1. Set your DO Model Access Key
 export DO_MODEL_ACCESS_KEY="dop_v1_..."
 
-# 2. Start Plano gateway (in a separate terminal)
-planoai up config.yaml
+# 2. Start Plano with tracing (terminal 1)
+planoai up config.yaml --with-tracing
 
-# 3. Generate a storybook
+# 3. Watch traces live (terminal 2, optional)
+planoai trace
+
+# 4. Generate a storybook (terminal 3)
 uv run storybook.py "a brave little robot who learns to dream"
 ```
 
-## Options
+## Routing Modes
 
 ```bash
-# Random theme
-uv run storybook.py
+# Task-aware (default) — best model per step
+uv run storybook.py "a kitten and the stars"
 
-# Custom output path
-uv run storybook.py -o my_story.html "a penguin who dreams of flying"
+# Premium — Claude Opus 4.6 for all text steps
+uv run storybook.py --premium "a kitten and the stars"
+
+# Economy — Llama 3.3 for everything (cheapest)
+uv run storybook.py --economy "a kitten and the stars"
 
 # Text only (skip image generation)
-uv run storybook.py --no-images "a shy firefly"
+uv run storybook.py --no-images "a kitten and the stars"
 ```
 
 ## What this demo shows
 
-1. **Multi-model orchestration** — 4 different models, each chosen for its strength
-2. **DO-native stack** — All models hosted on DigitalOcean, no third-party API keys
-3. **Plano as gateway** — Single endpoint routes to the right model per task
-4. **Text + Image** — Combines text inference and image generation in one pipeline
-5. **Tangible output** — A real storybook, not just API responses
-
-## Architecture
-
-| Agent | Model | Role | Why this model |
-|-------|-------|------|----------------|
-| Story Writer | `llama3.3-70b-instruct` | Draft creative story | Fast, creative, cheap |
-| Story Editor | `deepseek-r1-distill-llama-70b` | Polish and refine | Strong reasoning for structure |
-| Prompt Crafter | `alibaba-qwen3-32b` | Text → image prompts | Good at structured output |
-| Illustrator | `fal-ai/flux/schnell` | Generate illustrations | Fast image gen on DO |
-
-All text models route through Plano. Image generation goes directly to DO Serverless Inference.
-
-## Cost
-
-A single storybook generation costs approximately **< $0.01 USD** in API usage.
+1. **Task-aware model routing** — Different models for different tasks, all through one gateway
+2. **DO-native stack** — Anthropic Opus 4.6 + Llama + DeepSeek + image gen, all via DO Serverless Inference
+3. **Plano as unified gateway** — Single endpoint, multiple providers, zero code changes to swap models
+4. **Observability** — `planoai trace` shows every request with model, latency, token usage
+5. **Cost optimization** — Premium models only where quality matters, cheap models for mechanical tasks
+6. **Tangible output** — A real illustrated storybook, not just API responses

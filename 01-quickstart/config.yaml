@@ -7,5 +7,5 @@ listeners:
 
 model_providers:
   - model: openai/gpt-4o-mini
-    access_key: ${OPENAI_API_KEY}
+    access_key: $OPENAI_API_KEY
     default: true
