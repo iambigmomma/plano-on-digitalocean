@@ -1,0 +1,26 @@
+version: v0.3.0
+
+listeners:
+  - type: model
+    name: storybook_gateway
+    port: 12000
+
+model_providers:
+  # Story Writer — fast and creative
+  - model: digitalocean/llama3.3-70b-instruct
+    base_url: https://inference.do-ai.run
+    provider_interface: openai
+    access_key: ${DO_MODEL_ACCESS_KEY}
+    default: true
+
+  # Story Editor — strong reasoning for structure and polish
+  - model: digitalocean/deepseek-r1-distill-llama-70b
+    base_url: https://inference.do-ai.run
+    provider_interface: openai
+    access_key: ${DO_MODEL_ACCESS_KEY}
+
+  # Prompt Crafter — good at structured output and multilingual
+  - model: digitalocean/alibaba-qwen3-32b
+    base_url: https://inference.do-ai.run
+    provider_interface: openai
+    access_key: ${DO_MODEL_ACCESS_KEY}
