@@ -1,11 +1,11 @@
 # 01 - Quickstart
 
-The simplest Plano setup: proxy requests to OpenAI through a local endpoint.
+The simplest Plano setup: proxy requests to DigitalOcean Serverless Inference through a local endpoint.
 
 ## Run
 
 ```bash
-export OPENAI_API_KEY="sk-..."
+export DO_MODEL_ACCESS_KEY="dop_v1_..."
 planoai up config.yaml
 ```
 
@@ -15,8 +15,8 @@ planoai up config.yaml
 curl http://localhost:12000/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
-    "messages": [{"role": "user", "content": "Say hello from Plano!"}],
-    "model": "gpt-4o-mini"
+    "model": "digitalocean/llama3.3-70b-instruct",
+    "messages": [{"role": "user", "content": "Say hello from Plano!"}]
   }'
 ```
 
@@ -24,4 +24,5 @@ curl http://localhost:12000/v1/chat/completions \
 
 - Plano CLI installs and runs
 - Config format works
-- Proxy successfully routes to OpenAI
+- Proxy successfully routes to DO Serverless Inference
+- No OpenAI key needed — all on DigitalOcean

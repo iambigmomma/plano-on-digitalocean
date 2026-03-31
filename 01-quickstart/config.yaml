@@ -6,6 +6,8 @@ listeners:
     port: 12000
 
 model_providers:
-  - model: openai/gpt-4o-mini
-    access_key: $OPENAI_API_KEY
+  - model: digitalocean/llama3.3-70b-instruct
+    base_url: https://inference.do-ai.run
+    provider_interface: openai
+    access_key: $DO_MODEL_ACCESS_KEY
     default: true
