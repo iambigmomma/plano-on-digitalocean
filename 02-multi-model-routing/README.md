@@ -71,7 +71,7 @@ Open `http://localhost:16686` in your browser to see the Jaeger trace UI.
 
 Select **Service: `plano(llm)`** and click **Find Traces** to see all requests. Each trace shows which model was called, how many spans, and total duration.
 
-![Jaeger trace list showing requests to Opus 4.6, DeepSeek R1, and Llama 3.3](screenshots/jaeger-trace-list.png)
+![Jaeger trace list showing requests to Opus 4.6, DeepSeek R1, and Llama 3.3](screenshots/jaeger-search-4-traces-opus-deepseek-llama.png)
 
 ### Trace detail view
 
@@ -81,7 +81,7 @@ Click into a trace to see the full request lifecycle:
 - **`plano(routing)`** — the routing decision (22μs)
 - **`plano(outbound)`** — the actual call to `inference.do-ai.run` with HTTP status, request/response size
 
-![Jaeger trace detail showing plano(llm) → plano(routing) → plano(outbound) spans](screenshots/jaeger-trace-detail.png)
+![Jaeger trace detail showing plano(llm) → plano(routing) → plano(outbound) spans](screenshots/jaeger-span-waterfall-llama3-request.png)
 
 ### CLI traces
 

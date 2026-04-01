@@ -63,6 +63,8 @@ MODEL_COST_PER_1K = {
 }
 
 IMAGE_MODEL = "fal-ai/fast-sdxl"
+# This CLI uses the type:model gateway (:12000) with client-side model selection.
+# The web frontend uses the type:agent gateway (:8001) with orchestrator routing.
 PLANO_URL = "http://localhost:12000/v1"
 DO_INFERENCE_URL = "https://inference.do-ai.run/v1"
 NUM_PAGES = 4

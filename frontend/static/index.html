@@ -478,19 +478,30 @@ function loadImageAsDataURL(url) {
   });
 }
 
-// Load CJK font (Noto Sans SC) for PDF
-let cjkFontLoaded = false;
+// Load CJK font (Noto Sans SC) from Google Fonts CDN for PDF
+let cjkFontB64 = null;
 async function ensureCJKFont(pdf) {
-  if (cjkFontLoaded) return;
+  if (cjkFontB64) {
+    pdf.addFileToVFS('NotoSansSC.ttf', cjkFontB64);
+    pdf.addFont('NotoSansSC.ttf', 'NotoSansSC', 'normal');
+    return true;
+  }
   try {
-    const resp = await fetch('https://cdn.jsdelivr.net/gh/nicholasgasior/gfonts-base64/fonts/noto-sans-sc/NotoSansSC-Regular-base64.txt');
-    if (resp.ok) {
-      const b64 = await resp.text();
-      pdf.addFileToVFS('NotoSansSC.ttf', b64);
-      pdf.addFont('NotoSansSC.ttf', 'NotoSansSC', 'normal');
-      cjkFontLoaded = true;
-    }
-  } catch {}
+    const resp = await fetch('https://fonts.gstatic.com/s/notosanssc/v37/k3kCo84MPvpLmixcA63oeAL7Iqp5IZJF9bmaG9_EnYxNbPzS5HE.ttf');
+    if (!resp.ok) return false;
+    const buf = await resp.arrayBuffer();
+    // Convert ArrayBuffer to base64
+    const bytes = new Uint8Array(buf);
+    let binary = '';
+    for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+    cjkFontB64 = btoa(binary);
+    pdf.addFileToVFS('NotoSansSC.ttf', cjkFontB64);
+    pdf.addFont('NotoSansSC.ttf', 'NotoSansSC', 'normal');
+    return true;
+  } catch (e) {
+    console.warn('CJK font load failed:', e);
+    return false;
+  }
 }
 
 async function downloadPDF() {
@@ -503,9 +514,11 @@ async function downloadPDF() {
     const pdf = new jsPDF({ unit: 'mm', format: 'a4' });
     const W = 210, H = 297, M = 20;
 
-    // Try to load CJK font
-    await ensureCJKFont(pdf);
-    const fontName = cjkFontLoaded ? 'NotoSansSC' : 'helvetica';
+    // Load CJK font from Google Fonts CDN (~10MB, cached after first load)
+    btn.textContent = 'Loading font...';
+    const hasCJK = await ensureCJKFont(pdf);
+    const fontName = hasCJK ? 'NotoSansSC' : 'helvetica';
+    btn.textContent = 'Creating PDF...';
 
     // Helper: dark page background
     const darkBg = () => { pdf.setFillColor(10, 14, 26); pdf.rect(0, 0, W, H, 'F'); };
