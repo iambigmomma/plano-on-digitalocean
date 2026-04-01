@@ -2,12 +2,12 @@
 Storybook Frontend — serves the web UI and proxies requests to Plano.
 """
 
+import asyncio
 import json
 import os
-import time
-import urllib.request
 from pathlib import Path
 
+import httpx
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -71,28 +71,25 @@ async def generate_image(prompt: str):
         "Content-Type": "application/json",
     }
 
-    # Submit async job
-    submit_data = json.dumps({
-        "model_id": IMAGE_MODEL,
-        "input": {"prompt": prompt},
-    }).encode()
-    req = urllib.request.Request(
-        f"{DO_INFERENCE_URL}/v1/async-invoke",
-        data=submit_data, headers=headers, method="POST",
-    )
-    with urllib.request.urlopen(req, timeout=30) as resp:
-        result = json.loads(resp.read())
+    async with httpx.AsyncClient(timeout=30) as client:
+        # Submit async job
+        resp = await client.post(
+            f"{DO_INFERENCE_URL}/v1/async-invoke",
+            json={"model_id": IMAGE_MODEL, "input": {"prompt": prompt}},
+            headers=headers,
+        )
+        result = resp.json()
     request_id = result.get("request_id")
     if not request_id:
         raise HTTPException(500, "No request_id from DO")
 
-    # Poll for completion
+    # Poll for completion (non-blocking)
     status_url = f"{DO_INFERENCE_URL}/v1/async-invoke/{request_id}/status"
     for _ in range(45):
-        time.sleep(2)
-        req = urllib.request.Request(status_url, headers=headers)
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            result = json.loads(resp.read())
+        await asyncio.sleep(2)
+        async with httpx.AsyncClient(timeout=10) as client:
+            resp = await client.get(status_url, headers=headers)
+            result = resp.json()
         if result.get("status") == "COMPLETED":
             images = result.get("output", {}).get("images", [])
             if images:

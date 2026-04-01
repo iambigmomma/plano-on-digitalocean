@@ -722,15 +722,12 @@ async function generate() {
       setStepState('illustrate', 'skipped', 'skipped', 'Illustrations skipped');
     } else {
       setStepState('illustrate', 'active');
-      for (let i = 0; i < Math.min(prompts.length, 4); i++) {
-        document.getElementById('content-illustrate').textContent = `Generating image ${i+1}/4...`;
-        try {
-          const r4 = await callAPI('illustrate', theme, prompts[i]);
-          images.push(r4.content);
-          document.getElementById('content-illustrate').textContent = `${i+1}/4 done`;
-        } catch {
-          images.push('');
-        }
+      document.getElementById('content-illustrate').textContent = 'Generating 4 images in parallel...';
+      const results = await Promise.allSettled(
+        prompts.slice(0, 4).map(p => callAPI('illustrate', theme, p))
+      );
+      for (const r of results) {
+        images.push(r.status === 'fulfilled' ? r.value.content : '');
       }
       const count = images.filter(Boolean).length;
       setStepState('illustrate', 'done', 'fal-ai/fast-sdxl', `${count}/4 images generated`);

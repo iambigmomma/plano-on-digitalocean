@@ -3,3 +3,4 @@ __pycache__/
 uv.lock
 *.pdf
 CLAUDE.md
+docs/prime-forge-plan.md

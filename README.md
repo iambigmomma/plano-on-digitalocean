@@ -4,45 +4,7 @@ Build intelligent multi-agent AI systems with [Plano](https://planoai.dev) + [Di
 
 ## Architecture
 
-```
-                          ┌────────────────────────────┐
-                          │   Frontend (:8080)          │
-                          │   Web UI for storybook      │
-                          └─────────────┬──────────────┘
-                                        │
-                          ┌─────────────▼──────────────┐
-                          │   Plano Gateway (:8001)     │
-                          │   type: agent               │
-                          │   router: plano_             │
-                          │   orchestrator_v1            │
-                          └─────────────┬──────────────┘
-                                        │
-                      ┌─────────────────┼─────────────────┐
-                      │  Plano-Orchestrator-4B (vLLM)     │
-                      │  Reads user intent, picks agent   │
-                      │  Self-hosted on GPU (:10010)      │
-                      └─────────────────┬─────────────────┘
-                                        │
-              ┌─────────────────────────┼─────────────────────────┐
-              │                         │                         │
-  ┌───────────▼────────────┐ ┌─────────▼──────────┐ ┌───────────▼────────────┐
-  │  Story Writer (:10510) │ │ Story Editor        │ │ Prompt Crafter (:10530)│
-  │  Opus 4.6 via DO       │ │ (:10520)            │ │ Llama 3.3 via DO       │
-  │  Drafts stories        │ │ Opus 4.6 via DO     │ │ JSON image prompts     │
-  └────────────────────────┘ │ Polishes prose      │ └────────────────────────┘
-                             └─────────────────────┘
-              │                         │                         │
-              └─────────────────────────┼─────────────────────────┘
-                                        │
-                          ┌─────────────▼──────────────┐
-                          │  DigitalOcean Serverless    │
-                          │  Inference                  │
-                          │  inference.do-ai.run        │
-                          │                             │
-                          │  Opus 4.6 · Llama 3.3      │
-                          │  DeepSeek R1 · fast-sdxl    │
-                          └────────────────────────────┘
-```
+![AI Storybook Generation Pipeline — request routing from frontend through Plano Gateway, orchestrator selects agent per step, all models on DigitalOcean Serverless Inference](assets/assembly-line-light.gif)
 
 **How it works:** The user sends a message through one endpoint. Plano's self-hosted 4B orchestrator model analyzes the intent and automatically routes to the right agent. Each agent calls the best LLM for its task via DigitalOcean Serverless Inference. The user never specifies which agent or model to use.
 
