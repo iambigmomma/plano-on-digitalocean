@@ -19,6 +19,7 @@ Build intelligent multi-agent AI systems with [Plano](https://planoai.dev) + [Di
 | [`docs`](docs/) | Tutorial writeup | Full walkthrough |
 
 ## The Demo: AI Storybook Generator
+![AI Storybook Generation Screenshot](assets/storyforge_plano_do.png)
 
 Users type a story theme, and the system automatically:
 
